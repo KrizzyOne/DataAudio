@@ -1,2 +1,55 @@
-# DataAudio
-Sound clearing
+import oshi.SystemInfo;
+import oshi.hardware.CentralProcessor;
+import oshi.hardware.GlobalMemory;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+public class SystemMonitor extends JFrame {
+    private JLabel cpuLabel;
+    private JLabel memoryLabel;
+    private Timer timer;
+    private SystemInfo systemInfo;
+    private CentralProcessor processor;
+    private GlobalMemory memory;
+
+    public SystemMonitor() {
+        setTitle("System Monitor");
+        setSize(300, 150);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setLayout(new GridLayout(2, 1));
+
+        cpuLabel = new JLabel("CPU Usage: ");
+        memoryLabel = new JLabel("Memory Usage: ");
+
+        add(cpuLabel);
+        add(memoryLabel);
+
+        systemInfo = new SystemInfo();
+        processor = systemInfo.getHardware().getProcessor();
+        memory = systemInfo.getHardware().getMemory();
+
+        timer = new Timer(1000, new ActionListener() {
+            long[] prevTicks = processor.getSystemCpuLoadTicks();
+            public void actionPerformed(ActionEvent e) {
+                long[] newTicks = processor.getSystemCpuLoadTicks();
+                double cpuLoad = processor.getSystemCpuLoadBetweenTicks(prevTicks) * 100;
+                prevTicks = newTicks;
+                long total = memory.getTotal();
+                long available = memory.getAvailable();
+                double usedMem = ((double) (total - available) / total) * 100;
+
+                cpuLabel.setText(String.format("CPU Usage: %.2f%%", cpuLoad));
+                memoryLabel.setText(String.format("Memory Usage: %.2f%%", usedMem));
+            }
+        });
+        timer.start();
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            new SystemMonitor().setVisible(true);
+        });
+    }
+}
